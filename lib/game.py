@@ -25,19 +25,37 @@ class GameEngine(object):
         action = actor.get_action(self._state)
         if action == Actions.GO_UP:
             actor.direction = ActorDirections.UP
-            actor.y -= 1
+            if self._check_can_move(actor, actor.x, actor.y - 1):
+                actor.y -= 1
+            else:
+                actor.y = actor.y
 
         if action == Actions.GO_DOWN:
             actor.direction = ActorDirections.DOWN
-            actor.y += 1
+            if self._check_can_move(actor, actor.x, actor.y + 1):
+                actor.y += 1
+            else:
+                actor.y = actor.y
 
         if action == Actions.GO_LEFT:
             actor.direction = ActorDirections.LEFT
-            actor.x -= 1
+            if self._check_can_move(actor, actor.x - 1, actor.x):
+                actor.x -= 1
+            else:
+                actor.x = actor.x
 
         if action == Actions.GO_RIGHT:
             actor.direction = ActorDirections.RIGHT
-            actor.x += 1
+            if self._check_can_move(actor, actor.x + 1, actor.x):
+                actor.x += 1
+            else:
+                actor.x = actor.x
+
+    def _check_can_move(self, actor, new_x, new_y):
+        max_cor = self._state.BOARD_SIZE - actor.size
+        if 0 <= new_x < max_cor and 0 <= new_y < max_cor:
+            return True
+        return False
 
     def tick(self):
         for actor in game_state.actors:
