@@ -1,7 +1,9 @@
 import numpy as np
 from sprites import SpriteStorage
-from actors import DummyPlayer
-import PIL as pillow
+from actors import PyGameKeyboardPlayer
+import pygame
+
+from actors import Actions, ActorDirections
 
 
 class GameState(object):
@@ -16,18 +18,36 @@ class GameState(object):
 
 
 class GameEngine(object):
-    def __init__(self):
-        # init field
-        pass
+    def __init__(self, game_state):
+        self._state = game_state
+
+    def _apply_action(self, actor):
+        action = actor.get_action(self._state)
+        if action == Actions.GO_UP:
+            actor.direction = ActorDirections.UP
+            actor.y -= 1
+
+        if action == Actions.GO_DOWN:
+            actor.direction = ActorDirections.DOWN
+            actor.y += 1
+
+        if action == Actions.GO_LEFT:
+            actor.direction = ActorDirections.LEFT
+            actor.x -= 1
+
+        if action == Actions.GO_RIGHT:
+            actor.direction = ActorDirections.RIGHT
+            actor.x += 1
 
     def tick(self):
-        pass
+        for actor in game_state.actors:
+            self._apply_action(actor)
 
 
 class Renderer(object):
     def __init__(self, game_state, sprite_storage, scale=4):
-        size = game_state.BOARD_SIZE * scale
-        self._screen = np.zeros((size, size), dtype=np.uint8)
+        self.size = game_state.BOARD_SIZE * scale
+        self._screen = np.zeros((self.size, self.size), dtype=np.uint8)
         self._scale = scale
         self._game_state = game_state
         self._sprite_storage = sprite_storage
@@ -42,7 +62,26 @@ class Renderer(object):
 
 
 if __name__ == "__main__":
-    game_state = GameState().add_actor(DummyPlayer(192, 0))
+    game_state = GameState().add_actor(PyGameKeyboardPlayer(192, 0))
     sprite_storage = SpriteStorage('../data/tank_sprite.png')
+
+    pygame.init()
+
+    engine = GameEngine(game_state)
     renderer = Renderer(game_state, sprite_storage)
-    renderer.render().show()
+
+    screen = pygame.display.set_mode((renderer.size, renderer.size))
+    clock = pygame.time.Clock()
+    while True:
+        engine.tick()
+        image = renderer.render()
+        image = np.asarray(image, dtype=np.uint8)
+
+        image = image.T
+        sf = pygame.surfarray.make_surface(image)
+        p = sprite_storage.palette
+        i_p = iter(p)
+        sf.set_palette(list(zip(i_p, i_p, i_p)))
+        screen.blit(sf, (0, 0))
+        pygame.display.flip()
+        clock.tick(80)
