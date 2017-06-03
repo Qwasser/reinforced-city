@@ -1,15 +1,49 @@
 import numpy as np
-from sprites import SpriteStorage
+from sprites import SpriteStorage, StaticObjectTypes
 from actors import PyGameKeyboardPlayer
 import pygame
+from enum import Enum
 
 from actors import Actions, ActorDirections
 
 
-class GameState(object):
-    BOARD_SIZE = 13 * 16
+BLOCK_COUNT = 13
+
+STATIC_OBJ_PER_BLOCK = 2
+SPRITES_PER_OBJ = 2
+
+PIXELS_PER_BLOCK = 16
+
+STATIC_SPRITE_TYPE_COUNT = 4
+
+
+class MapBuilder(object):
+    MAP_SIZE = BLOCK_COUNT * STATIC_OBJ_PER_BLOCK * SPRITES_PER_OBJ
 
     def __init__(self):
+        self._map = np.zeros((self.MAP_SIZE, self.MAP_SIZE), dtype=np.uint8)
+
+    def add_bricks(self, x, y):
+        base = StaticObjectTypes.BRICK.value * STATIC_SPRITE_TYPE_COUNT
+
+        x *= SPRITES_PER_OBJ
+        y *= SPRITES_PER_OBJ
+
+        self._map[y, x] = base + 1
+        self._map[y, x + 1] = base + 2
+        self._map[y + 1, x] = base + 3
+        self._map[y + 1, x + 1] = base + 4
+        return self
+
+    def get_map(self):
+        return self._map.copy()
+
+
+class GameState(object):
+    BOARD_SIZE = BLOCK_COUNT * PIXELS_PER_BLOCK
+
+    def __init__(self, map):
+        self.map = map
         self.actors = []
 
     def add_actor(self, actor):
@@ -72,15 +106,28 @@ class Renderer(object):
 
     def render(self):
         self._screen.fill(0)
+
+        for x in xrange(self._game_state.map.shape[0]):
+            for y in xrange(self._game_state.map.shape[1]):
+                obj_index = self._game_state.map[x, y]
+                if obj_index != 0:
+                    sprite = self._sprite_storage.get_static_object_sprite(obj_index - 1,
+                                                                           scale=self._scale)
+                    self._screen[y * 4 * self._scale: y * 4 * self._scale + sprite.shape[0],
+                                 x * 4 * self._scale: x * 4 * self._scale + sprite.shape[1]] = sprite
+
         for actor in self._game_state.actors:
             sprite = self._sprite_storage.get_player_actor_sprite(actor, scale=self._scale)
             self._screen[actor.y * self._scale: actor.y * self._scale + sprite.shape[0],
                          actor.x * self._scale: actor.x * self._scale + sprite.shape[1]] = sprite
+
         return self._sprite_storage.array_to_img(self._screen)
 
 
 if __name__ == "__main__":
-    game_state = GameState().add_actor(PyGameKeyboardPlayer(192, 0))
+    map = MapBuilder().add_bricks(5, 5).add_bricks(5, 6).add_bricks(6, 5).add_bricks(6,6).get_map()
+    game_state = GameState(map).add_actor(PyGameKeyboardPlayer(192, 0))
+
     sprite_storage = SpriteStorage('../data/tank_sprite.png')
 
     pygame.init()
