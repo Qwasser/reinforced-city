@@ -5,10 +5,6 @@ from enum import Enum
 from actors import ActorDirections, StepCycle
 
 
-def scale_up_sprite(sprite, scale):
-    return np.kron(sprite, np.ones((scale, scale), dtype=np.uint8))
-
-
 class StaticObjectTypes(Enum):
     BRICK = 0
     CONCRETE = 1
@@ -62,7 +58,7 @@ class SpriteStorage(object):
         return img
 
     def get_player_actor_sprite(self, actor, scale=1):
-        return scale_up_sprite(self._player_sprites[actor.direction, actor.step_cycle], scale)
+        return self._player_sprites[actor.direction, actor.step_cycle]
 
     def _load_static_object_sprites(self, sprite_array):
         self.static_object_sprites = np.zeros((len(StaticObjectTypes) * 4, 4, 4), dtype=np.uint8)
@@ -74,8 +70,8 @@ class SpriteStorage(object):
             self.static_object_sprites[base + 2] = sprite_array[y_offset + 4: y_offset + 8, x_offset: x_offset + 4]
             self.static_object_sprites[base + 3] = sprite_array[y_offset + 4: y_offset + 8, x_offset + 4: x_offset + 8]
 
-    def get_static_object_sprite(self, index, scale=1):
-        return scale_up_sprite(self.static_object_sprites[index], scale)
+    def get_static_object_sprite(self, index):
+        return self.static_object_sprites[index]
 
 if __name__ == "__main__":
     pass
