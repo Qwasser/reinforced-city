@@ -71,14 +71,14 @@ class GameEngine(object):
 
         if action == Actions.GO_LEFT:
             actor.direction = ActorDirections.LEFT
-            if self._check_can_move(actor, actor.x - 1, actor.x):
+            if self._check_can_move(actor, actor.x - 1, actor.y):
                 actor.x -= 1
             else:
                 actor.x = actor.x
 
         if action == Actions.GO_RIGHT:
             actor.direction = ActorDirections.RIGHT
-            if self._check_can_move(actor, actor.x + 1, actor.x):
+            if self._check_can_move(actor, actor.x + 1, actor.y):
                 actor.x += 1
             else:
                 actor.x = actor.x
@@ -86,7 +86,9 @@ class GameEngine(object):
     def _check_can_move(self, actor, new_x, new_y):
         max_cor = self._state.BOARD_SIZE - actor.size
         if 0 <= new_x < max_cor and 0 <= new_y < max_cor:
-            return True
+            if np.sum(self._state.map[new_y / 4: (new_y + actor.size + 3) / 4,
+                                      new_x / 4: (new_x + actor.size + 3) / 4]) == 0:
+                return True
         return False
 
     def tick(self):
@@ -106,33 +108,33 @@ class Renderer(object):
         self._scale = scale
         self._game_state = game_state
         self._sprite_storage = sprite_storage
+        self._render_env()
 
     def render(self):
-        self._screen.fill(0)
+        for actor in self._game_state.actors:
+            sprite = self._sprite_storage.get_player_actor_sprite(actor)
+            self._screen[actor.y: actor.y + sprite.shape[0],
+                         actor.x: actor.x + sprite.shape[1]] = sprite
+        return scale_up_screen(self._screen, self._scale)
 
+    def _render_env(self):
         for x in xrange(self._game_state.map.shape[0]):
             for y in xrange(self._game_state.map.shape[1]):
-                obj_index = self._game_state.map[x, y]
+                obj_index = self._game_state.map[y, x]
                 if obj_index != 0:
                     sprite = self._sprite_storage.get_static_object_sprite(obj_index - 1)
                     self._screen[y * 4: y * 4 + sprite.shape[0],
                                  x * 4: x * 4 + sprite.shape[1]] = sprite
 
-        for actor in self._game_state.actors:
-            sprite = self._sprite_storage.get_player_actor_sprite(actor)
-            self._screen[actor.y: actor.y + sprite.shape[0],
-                         actor.x: actor.x + sprite.shape[1]] = sprite
-
-        return self._sprite_storage.array_to_img(scale_up_screen(self._screen, self._scale))
+    def _rerender_env_sector(self, x0, y0, x1, y1):
+        pass
 
 
 if __name__ == "__main__":
-    map_builder = MapBuilder().add_bricks(5, 5).add_bricks(5, 6).add_bricks(6, 5).add_bricks(6, 6)
-    for i in range(20):
-        map_builder.add_bricks(7, i)
+    map_builder = MapBuilder()
 
-    for i in range(2):
-        for j in range(2):
+    for i in range(5, 10):
+        for j in range(5, 10):
             map_builder.add_bricks(i, j)
 
     map = map_builder.get_map()
