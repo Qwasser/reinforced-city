@@ -3,7 +3,7 @@ from sprites import SpriteStorage, StaticObjectTypes
 from actors import PyGameKeyboardPlayer
 import pygame
 
-from actors import Actions, ActorDirections
+from actors import Actions, ActorDirections, DIRECTION_VECTORS, Bullet
 
 BLOCK_COUNT = 13
 
@@ -83,6 +83,20 @@ class GameEngine(object):
             else:
                 actor.x = actor.x
 
+        if action == Actions.SHOOT:
+            if actor.bullet is None:
+                if actor.direction == ActorDirections.UP:
+                    actor.bullet = Bullet(actor.y - 3, actor.x + 6, actor.direction)
+
+                if actor.direction == ActorDirections.DOWN:
+                    actor.bullet = Bullet(actor.y + 16, actor.x + 6, actor.direction)
+
+                if actor.direction == ActorDirections.LEFT:
+                    actor.bullet = Bullet(actor.y + 6, actor.x - 3, actor.direction)
+
+                if actor.direction == ActorDirections.RIGHT:
+                    actor.bullet = Bullet(actor.y + 6, actor.x + 16, actor.direction)
+
     def _check_can_move(self, actor, new_x, new_y):
         max_cor = self._state.BOARD_SIZE - actor.size
         if 0 <= new_x < max_cor and 0 <= new_y < max_cor:
@@ -115,6 +129,13 @@ class Renderer(object):
             sprite = self._sprite_storage.get_player_actor_sprite(actor)
             self._screen[actor.y: actor.y + sprite.shape[0],
                          actor.x: actor.x + sprite.shape[1]] = sprite
+
+            bullet = actor.bullet
+            if bullet is not None:
+                sprite = self._sprite_storage.get_bullet_actor_sprite(bullet)
+                self._screen[bullet.y: bullet.y + sprite.shape[0],
+                             bullet.x: bullet.x + sprite.shape[1]] = sprite
+
         return scale_up_screen(self._screen, self._scale)
 
     def _render_env(self):

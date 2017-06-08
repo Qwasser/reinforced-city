@@ -20,6 +20,13 @@ class ActorDirections(Enum):
     DOWN = 2
     RIGHT = 3
 
+DIRECTION_VECTORS = [
+    (1, 0),
+    (0, -1),
+    (-1, 0),
+    (0, 1)
+]
+
 
 class StepCycle(Enum):
     FIRST = 0
@@ -34,7 +41,7 @@ class PlayerActor(object):
         self._y = y
         self._step_counter = 0
         self.size = 16
-        self.bullet_actor = None
+        self.bullet = None
 
     def get_action(self, game_state):
         pass
@@ -66,6 +73,13 @@ class PlayerActor(object):
     def y(self, y):
         self._change_step_cycle()
         self._y = y
+
+
+class Bullet(object):
+    def __init__(self, y, x, direction=ActorDirections.UP):
+        self.x = x
+        self.y = y
+        self.direction = direction
 
 
 class DummyPlayer(PlayerActor):
