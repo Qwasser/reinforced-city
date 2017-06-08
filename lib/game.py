@@ -83,6 +83,12 @@ class GameEngine(object):
             else:
                 actor.x = actor.x
 
+        if actor.bullet is not None:
+            delta_y, delta_x = DIRECTION_VECTORS[actor.bullet.direction.value]
+            delta_y, delta_x = delta_y * 2, delta_x * 2
+            actor.bullet.x += delta_x
+            actor.bullet.y += delta_y
+
         if action == Actions.SHOOT:
             if actor.bullet is None:
                 if actor.direction == ActorDirections.UP:

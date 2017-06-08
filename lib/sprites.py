@@ -67,16 +67,16 @@ class SpriteStorage(object):
                      x_offset: x_offset + self.SPRITE_SIZE / 2]
 
             if direction == ActorDirections.UP:
-                sprite = sprite[6: 10, 3: 6]
+                sprite = sprite[6: 12, 3: 6]
 
             if direction == ActorDirections.DOWN:
-                sprite = sprite[6: 10, 3: 6]
+                sprite = sprite[4: 10, 3: 6]
 
             if direction == ActorDirections.LEFT:
-                sprite = sprite[6: 9, 2: 6]
+                sprite = sprite[6: 9, 2: 8]
 
             if direction == ActorDirections.RIGHT:
-                sprite = sprite[6: 9, 2: 6]
+                sprite = sprite[6: 9, 0: 6]
 
             self._bullet_sprites[direction] = sprite
             sprite_index += 1
@@ -104,3 +104,9 @@ class SpriteStorage(object):
 
     def get_static_object_sprite(self, index):
         return self.static_object_sprites[index]
+
+if __name__ == "__main__":
+    sprite_storage = SpriteStorage('../data/tank_sprite.png')
+    for key, item in sprite_storage._bullet_sprites.items():
+        print key
+        print item

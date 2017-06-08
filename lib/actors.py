@@ -21,9 +21,9 @@ class ActorDirections(Enum):
     RIGHT = 3
 
 DIRECTION_VECTORS = [
-    (1, 0),
-    (0, -1),
     (-1, 0),
+    (0, -1),
+    (+1, 0),
     (0, 1)
 ]
 
