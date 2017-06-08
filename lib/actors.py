@@ -34,6 +34,7 @@ class PlayerActor(object):
         self._y = y
         self._step_counter = 0
         self.size = 16
+        self.bullet_actor = None
 
     def get_action(self, game_state):
         pass

@@ -161,4 +161,4 @@ if __name__ == "__main__":
         sf.set_palette(list(zip(i_p, i_p, i_p)))
         screen.blit(sf, (0, 0))
         pygame.display.flip()
-        clock.tick(160)
+        clock.tick(80)
