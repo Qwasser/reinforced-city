@@ -105,7 +105,7 @@ class GameEngine(object):
 
     def _check_can_move(self, actor, new_x, new_y):
         max_cor = self._state.BOARD_SIZE - actor.size
-        if 0 <= new_x < max_cor and 0 <= new_y < max_cor:
+        if 0 <= new_x <= max_cor and 0 <= new_y <= max_cor:
             if np.sum(self._state.map[new_y / 4: (new_y + actor.size + 3) / 4,
                                       new_x / 4: (new_x + actor.size + 3) / 4]) == 0:
                 return True
