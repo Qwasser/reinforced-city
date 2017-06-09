@@ -89,6 +89,10 @@ class GameEngine(object):
             actor.bullet.x += delta_x
             actor.bullet.y += delta_y
 
+            max_cor = self._state.BOARD_SIZE - actor.size
+            if not(0 <= actor.bullet.x <= max_cor and 0 <= actor.bullet.y <= max_cor):
+                actor.bullet = None
+
         if action == Actions.SHOOT:
             if actor.bullet is None:
                 if actor.direction == ActorDirections.UP:
@@ -121,8 +125,11 @@ def scale_up_screen(screen, scale):
 
 
 class Renderer(object):
+    OFF_BOARD_SPACE = 8
+
     def __init__(self, game_state, sprite_storage, scale=4):
-        self.size = game_state.BOARD_SIZE
+        self.size = game_state.BOARD_SIZE + self.OFF_BOARD_SPACE * 2
+
         self.screen_size = scale * self.size
         self._screen = np.zeros((self.size, self.size), dtype=np.uint8)
         self._scale = scale
@@ -133,14 +140,12 @@ class Renderer(object):
     def render(self):
         for actor in self._game_state.actors:
             sprite = self._sprite_storage.get_player_actor_sprite(actor)
-            self._screen[actor.y: actor.y + sprite.shape[0],
-                         actor.x: actor.x + sprite.shape[1]] = sprite
+            self._lay_sprite(sprite, actor.x, actor.y)
 
             bullet = actor.bullet
             if bullet is not None:
                 sprite = self._sprite_storage.get_bullet_actor_sprite(bullet)
-                self._screen[bullet.y: bullet.y + sprite.shape[0],
-                             bullet.x: bullet.x + sprite.shape[1]] = sprite
+                self._lay_sprite(sprite, bullet.x, bullet.y)
 
         return scale_up_screen(self._screen, self._scale)
 
@@ -150,14 +155,19 @@ class Renderer(object):
                 obj_index = self._game_state.map[y, x]
                 if obj_index != 0:
                     sprite = self._sprite_storage.get_static_object_sprite(obj_index - 1)
-                    self._screen[y * 4: y * 4 + sprite.shape[0],
-                                 x * 4: x * 4 + sprite.shape[1]] = sprite
+                    self._lay_sprite(sprite, x * 4, y * 4)
 
-    def _rerender_env_sector(self, x0, y0, x1, y1):
-        pass
+    def _lay_sprite(self, sprite, x, y):
+        x += self.OFF_BOARD_SPACE
+        y += self.OFF_BOARD_SPACE
+
+        self._screen[y: y + sprite.shape[0],
+                     x: x + sprite.shape[1]] = sprite
 
 
 if __name__ == "__main__":
+    # refactor to normal pygame cycle
+
     map_builder = MapBuilder()
 
     for i in range(5, 10):
@@ -180,7 +190,6 @@ if __name__ == "__main__":
         engine.tick()
         image = renderer.render()
         image = np.asarray(image, dtype=np.uint8)
-
         image = image.T
         sf = pygame.surfarray.make_surface(image)
         p = sprite_storage.palette
@@ -188,4 +197,4 @@ if __name__ == "__main__":
         sf.set_palette(list(zip(i_p, i_p, i_p)))
         screen.blit(sf, (0, 0))
         pygame.display.flip()
-        clock.tick(80)
+        pygame.time.delay(10)
