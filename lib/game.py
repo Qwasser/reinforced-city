@@ -54,6 +54,9 @@ class GameEngine(object):
     def __init__(self, game_state):
         self._state = game_state
 
+    def set_renderer(self, renderer):
+        self._renderer = renderer
+
     def _move_actor(self, actor, direction, collider=None):
         actor.direction = direction
         dx, dy = enums.DIRECTION_VECTORS[actor.direction.value]
@@ -61,9 +64,12 @@ class GameEngine(object):
         dy *= actor.moving_speed
 
         if self._check_can_move(actor, actor.x + dx, actor.y + dy):
+            self._renderer.clear_actor(actor)
             actor.y += dy
             actor.x += dx
+
         elif collider is not None:
+            self._renderer.clear_actor(actor)
             collider()
         actor.animate()
 
@@ -120,6 +126,7 @@ class Renderer(object):
             bullet = actor.bullet
             if bullet is not None:
                 sprite = self._sprite_storage.get_bullet_actor_sprite(bullet)
+
                 self._lay_sprite(sprite, bullet.x, bullet.y)
 
         return self._screen
@@ -136,6 +143,13 @@ class Renderer(object):
         x += self.OFF_BOARD_SPACE
         y += self.OFF_BOARD_SPACE
         self._screen.put_sprite(sprite.T, (y * self._scale, x * self._scale, sprite.shape[1], sprite.shape[0]))
+
+    def clear_actor(self, actor):
+        _, _, dx, dy = actor.get_collision_rect()
+        self._screen.clear(((actor.y + self.OFF_BOARD_SPACE) * self._scale,
+                            (actor.x + self.OFF_BOARD_SPACE) * self._scale,
+                            dx * self._scale,
+                            dy * self._scale))
 
 
 class PyGameScreen(object):
@@ -156,6 +170,9 @@ class PyGameScreen(object):
     def put_sprite(self, sprite, rect):
         self._screen.blit(self._make_surface(sprite), rect)
 
+    def clear(self, rect):
+        self._screen.fill(0, rect)
+
 
 if __name__ == "__main__":
     map_builder = MapBuilder()
@@ -171,10 +188,11 @@ if __name__ == "__main__":
 
     engine = GameEngine(game_state)
     renderer = Renderer(game_state, PyGameScreen())
+    engine.set_renderer(renderer)
 
     clock = pygame.time.Clock()
     while True:
         engine.tick()
         image = renderer.render()
         pygame.display.flip()
-        pygame.time.delay(5)
+        pygame.time.delay(16)

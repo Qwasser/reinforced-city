@@ -42,9 +42,10 @@ class TankActor(Actor):
     def remove_bullet(self):
         self.bullet = None
 
+
 class Bullet(Actor):
     def __init__(self, y, x, direction):
-        super(Bullet, self).__init__(x, y, enums.ActorSpriteEnum.BULLET, direction)
+        super(Bullet, self).__init__(x, y, enums.ActorSpriteEnum.BULLET, direction, moving_speed=2)
         self.x = x
         self.y = y
         self.direction = direction
