@@ -120,21 +120,18 @@ class GameEngine(object):
             self._apply_action(actor)
 
 
-def scale_up_screen(screen, scale):
-    return np.kron(screen, np.ones((scale, scale), dtype=np.uint8))
-
-
 class Renderer(object):
     OFF_BOARD_SPACE = 8
 
-    def __init__(self, game_state, sprite_storage, scale=4):
-        self.size = game_state.BOARD_SIZE + self.OFF_BOARD_SPACE * 2
-
-        self.screen_size = scale * self.size
-        self._screen = np.zeros((self.size, self.size), dtype=np.uint8)
+    def __init__(self, game_state, screen, scale=4):
+        self.size = (game_state.BOARD_SIZE + self.OFF_BOARD_SPACE * 2) * scale
         self._scale = scale
         self._game_state = game_state
-        self._sprite_storage = sprite_storage
+        self._sprite_storage = SpriteStorage('../data/tank_sprite.png', self._scale)
+
+        self._screen = screen
+        self._screen.init_screen(self.size, self._sprite_storage.palette)
+
         self._render_env()
 
     def render(self):
@@ -147,7 +144,7 @@ class Renderer(object):
                 sprite = self._sprite_storage.get_bullet_actor_sprite(bullet)
                 self._lay_sprite(sprite, bullet.x, bullet.y)
 
-        return scale_up_screen(self._screen, self._scale)
+        return self._screen
 
     def _render_env(self):
         for x in xrange(self._game_state.map.shape[0]):
@@ -161,13 +158,29 @@ class Renderer(object):
         x += self.OFF_BOARD_SPACE
         y += self.OFF_BOARD_SPACE
 
-        self._screen[y: y + sprite.shape[0],
-                     x: x + sprite.shape[1]] = sprite
+        self._screen.put_sprite(sprite, (x * self._scale, y * self._scale, sprite.shape[1], sprite.shape[0]))
+
+
+class PyGameScreen(object):
+    def __init__(self):
+        self._screen = None
+        self._palette = None
+
+    def init_screen(self, size, palette=None):
+        self._screen = pygame.display.set_mode((size, size))
+        self._palette = palette
+
+    def _make_surface(self, sprite):
+        sprite_sf = pygame.surfarray.make_surface(sprite)
+        i_p = iter(self._palette)
+        sprite_sf.set_palette(list(zip(i_p, i_p, i_p)))
+        return sprite_sf
+
+    def put_sprite(self, sprite, rect):
+        self._screen.blit(self._make_surface(sprite), rect)
 
 
 if __name__ == "__main__":
-    # refactor to normal pygame cycle
-
     map_builder = MapBuilder()
 
     for i in range(5, 10):
@@ -177,24 +190,14 @@ if __name__ == "__main__":
     map = map_builder.get_map()
     game_state = GameState(map).add_actor(PyGameKeyboardPlayer(192, 0))
 
-    sprite_storage = SpriteStorage('../data/tank_sprite.png')
-
     pygame.init()
 
     engine = GameEngine(game_state)
-    renderer = Renderer(game_state, sprite_storage)
+    renderer = Renderer(game_state, PyGameScreen())
 
-    screen = pygame.display.set_mode((renderer.screen_size, renderer.screen_size))
     clock = pygame.time.Clock()
     while True:
         engine.tick()
         image = renderer.render()
-        image = np.asarray(image, dtype=np.uint8)
-        image = image.T
-        sf = pygame.surfarray.make_surface(image)
-        p = sprite_storage.palette
-        i_p = iter(p)
-        sf.set_palette(list(zip(i_p, i_p, i_p)))
-        screen.blit(sf, (0, 0))
         pygame.display.flip()
-        pygame.time.delay(10)
+        pygame.time.delay(16)
