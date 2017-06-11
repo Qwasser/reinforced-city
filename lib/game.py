@@ -54,65 +54,42 @@ class GameEngine(object):
     def __init__(self, game_state):
         self._state = game_state
 
+    def _move_actor(self, actor, direction, collider=None):
+        actor.direction = direction
+        dx, dy = enums.DIRECTION_VECTORS[actor.direction.value]
+        dx *= actor.moving_speed
+        dy *= actor.moving_speed
+
+        if self._check_can_move(actor, actor.x + dx, actor.y + dy):
+            actor.y += dy
+            actor.x += dx
+        elif collider is not None:
+            collider()
+        actor.animate()
+
     def _apply_action(self, actor):
         action = actor.get_action(self._state)
-        if action == enums.Actions.GO_UP:
-            actor.direction = enums.ActorDirections.UP
-            if self._check_can_move(actor, actor.x, actor.y - 1):
-                actor.y -= 1
-            else:
-                actor.y = actor.y
 
-        if action == enums.Actions.GO_DOWN:
-            actor.direction = enums.ActorDirections.DOWN
-            if self._check_can_move(actor, actor.x, actor.y + 1):
-                actor.y += 1
-            else:
-                actor.y = actor.y
-
-        if action == enums.Actions.GO_LEFT:
-            actor.direction = enums.ActorDirections.LEFT
-            if self._check_can_move(actor, actor.x - 1, actor.y):
-                actor.x -= 1
-            else:
-                actor.x = actor.x
-
-        if action == enums.Actions.GO_RIGHT:
-            actor.direction = enums.ActorDirections.RIGHT
-            if self._check_can_move(actor, actor.x + 1, actor.y):
-                actor.x += 1
-            else:
-                actor.x = actor.x
+        if action.value < 4:
+            self._move_actor(actor, enums.ActorDirections(action.value))
 
         if actor.bullet is not None:
-            delta_y, delta_x = enums.DIRECTION_VECTORS[actor.bullet.direction.value]
-            delta_y, delta_x = delta_y * 2, delta_x * 2
-            actor.bullet.x += delta_x
-            actor.bullet.y += delta_y
-
-            max_cor = self._state.BOARD_SIZE - actor.size
-            if not(0 <= actor.bullet.x <= max_cor and 0 <= actor.bullet.y <= max_cor):
-                actor.bullet = None
+            self._move_actor(actor.bullet, actor.bullet.direction, actor.remove_bullet)
 
         if action == enums.Actions.SHOOT:
             if actor.bullet is None:
-                if actor.direction == enums.ActorDirections.UP:
-                    actor.bullet = Bullet(actor.y - 3, actor.x + 6, actor.direction)
-
-                if actor.direction == enums.ActorDirections.DOWN:
-                    actor.bullet = Bullet(actor.y + 16, actor.x + 6, actor.direction)
-
-                if actor.direction == enums.ActorDirections.LEFT:
-                    actor.bullet = Bullet(actor.y + 6, actor.x - 3, actor.direction)
-
-                if actor.direction == enums.ActorDirections.RIGHT:
-                    actor.bullet = Bullet(actor.y + 6, actor.x + 16, actor.direction)
+                dx, dy = enums.BULLET_TANK_SHIFTS[actor.direction.value]
+                actor.bullet = Bullet(actor.y + dx, actor.x + dy, actor.direction)
 
     def _check_can_move(self, actor, new_x, new_y):
-        max_cor = self._state.BOARD_SIZE - actor.size
-        if 0 <= new_x <= max_cor and 0 <= new_y <= max_cor:
-            if np.sum(self._state.map[new_y / 4: (new_y + actor.size + 3) / 4,
-                                      new_x / 4: (new_x + actor.size + 3) / 4]) == 0:
+        x, y, dx, dy = actor.get_collision_rect()
+
+        max_y = self._state.BOARD_SIZE - y - dy
+        max_x = self._state.BOARD_SIZE - x - dx
+
+        if 0 <= new_x <= max_x and 0 <= new_y <= max_y:
+            if np.sum(self._state.map[(new_y + y) / 4: (new_y + y + dy + 3) / 4,
+                                      (new_x + x) / 4: (new_x + x + dx + 3) / 4]) == 0:
                 return True
         return False
 
@@ -158,8 +135,7 @@ class Renderer(object):
     def _lay_sprite(self, sprite, x, y):
         x += self.OFF_BOARD_SPACE
         y += self.OFF_BOARD_SPACE
-
-        self._screen.put_sprite(sprite, (x * self._scale, y * self._scale, sprite.shape[1], sprite.shape[0]))
+        self._screen.put_sprite(sprite.T, (y * self._scale, x * self._scale, sprite.shape[1], sprite.shape[0]))
 
 
 class PyGameScreen(object):
@@ -189,7 +165,7 @@ if __name__ == "__main__":
             map_builder.add_bricks(i, j)
 
     map = map_builder.get_map()
-    game_state = GameState(map).add_actor(PyGameKeyboardPlayer(192, 0, enums.ActorSpriteEnum.QUICK_TANK))
+    game_state = GameState(map).add_actor(PyGameKeyboardPlayer(192, 0, enums.ActorSpriteEnum.PLAYER_1_TANK))
 
     pygame.init()
 
@@ -201,4 +177,4 @@ if __name__ == "__main__":
         engine.tick()
         image = renderer.render()
         pygame.display.flip()
-        # pygame.time.delay(5)
+        pygame.time.delay(5)

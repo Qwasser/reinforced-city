@@ -9,7 +9,6 @@ class Actor(object):
         self.direction = direction
         self.sprite = sprite
         self.moving_speed = moving_speed
-        self.size = 0
 
     def animate(self):
         raise NotImplemented
@@ -40,13 +39,18 @@ class TankActor(Actor):
             else:
                 self.step_cycle = enums.TankAnimationCycle.FIRST
 
+    def remove_bullet(self):
+        self.bullet = None
 
 class Bullet(Actor):
-    def __init__(self, y, x, sprite, direction=enums.ActorDirections.UP):
-        super(Bullet, self).__init__(x, y, sprite, direction)
+    def __init__(self, y, x, direction):
+        super(Bullet, self).__init__(x, y, enums.ActorSpriteEnum.BULLET, direction)
         self.x = x
         self.y = y
         self.direction = direction
+
+    def animate(self):
+        pass
 
 
 class PyGameKeyboardPlayer(TankActor):

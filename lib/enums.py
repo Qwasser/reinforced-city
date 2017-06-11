@@ -19,12 +19,12 @@ class StaticObjectTypes(Enum):
 
 
 class Actions(Enum):
-    DO_NOTHING = 0
-    SHOOT = 1
-    GO_UP = 2
-    GO_LEFT = 3
-    GO_DOWN = 4
-    GO_RIGHT = 5
+    GO_UP = 0
+    GO_LEFT = 1
+    GO_DOWN = 2
+    GO_RIGHT = 3
+    DO_NOTHING = 4
+    SHOOT = 5
 
 
 class ActorDirections(Enum):
@@ -45,17 +45,24 @@ DIRECTION_VECTORS = [
 
 
 BULLET_COLLISION_RECTANGLES = [
-    (0, 0, 4, 4),
-    (0, 0, 4, 4),
-    (0, 0, 4, 4),
-    (0, 0, 4, 4),
+    (0, 0, 3, 4),
+    (0, 0, 4, 3),
+    (0, 0, 3, 4),
+    (0, 0, 4, 3),
 ]
 
 BULLET_SPRITE_RECTS = [
-    (3, 4, 3, 4),
+    (3, 6, 3, 4),
     (2, 6, 4, 3),
     (3, 6, 3, 4),
-    (2, 6, 4, 2),
+    (2, 6, 4, 3),
+]
+
+BULLET_TANK_SHIFTS = [
+    (6, -4),
+    (-4, 6),
+    (6, 16),
+    (16, 6),
 ]
 
 TANK_COLLISION_RECTANGLE = (0, 0, 16, 16)

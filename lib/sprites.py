@@ -6,7 +6,7 @@ import enums
 
 
 def scale_up_sprite(sprite, scale):
-    return np.kron(sprite, np.ones((scale, scale), dtype=np.uint8)).T
+    return np.kron(sprite, np.ones((scale, scale), dtype=np.uint8))
 
 
 class SpriteStorage(object):
