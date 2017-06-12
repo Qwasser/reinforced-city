@@ -46,18 +46,52 @@ class BulletCollider(object):
     @staticmethod
     def collide_static(bullet, new_x, new_y, game_state):
         bullet.source_tank.bullet = None
+
+        x, y, dx, dy = bullet.get_collision_rect()
+
         if bullet.direction == enums.ActorDirections.UP:
-            x, y, dx, dy = bullet.get_collision_rect()
-            col_y = (new_y + y) / 4
+            col_y_min = (new_y + y) / 4
+            col_y_max = col_y_min + 1
             col_x_min = (new_x + x) / 4
             col_x_max = (new_x + x + dx + 3) / 4
 
-            for col_x in range(col_x_min, col_x_max + 1):
+        if bullet.direction == enums.ActorDirections.DOWN:
+            col_y_min = (new_y + y + dy) / 4
+            col_y_max = col_y_min + 1
+            col_x_min = (new_x + x) / 4
+            col_x_max = (new_x + x + dx + 3) / 4
+
+        if bullet.direction == enums.ActorDirections.LEFT:
+            col_y_min = (new_y + y) / 4
+            col_y_max = (new_y + y + dy + 3) / 4
+            col_x_min = (new_x + x) / 4
+            col_x_max = col_x_min + 1
+
+        if bullet.direction == enums.ActorDirections.RIGHT:
+            col_y_min = (new_y + y) / 4
+            col_y_max = (new_y + y + dy + 3) / 4
+            col_x_min = (new_x + x + dx) / 4
+            col_x_max = col_x_min + 1
+
+        for col_x in range(col_x_min, col_x_max):
+            for col_y in range(col_y_min, col_y_max):
                 val = (game_state.map[col_y, col_x] - 1) / 4
                 if val == enums.StaticObjectTypes.BRICK.value:
-                    print game_state.map[col_y, col_x]
                     game_state.map[col_y, col_x] = 0
-            return (col_x_min, col_y, 1,  col_x_max - col_x_min)
+
+        return col_x_min, col_y_min, col_x_max - col_x_min, col_y_max - col_y_min
+
+        if bullet.direction == enums.ActorDirections.DOWN:
+            col_y = (new_y + y + dy) / 4
+
+            col_x_min = (new_x + x) / 4
+            col_x_max = (new_x + x + dx + 3) / 4
+
+            for col_x in range(col_x_min, col_x_max):
+                val = (game_state.map[col_y, col_x] - 1) / 4
+                if val == enums.StaticObjectTypes.BRICK.value:
+                    game_state.map[col_y, col_x] = 0
+            return col_x_min, col_y, col_x_max - col_x_min, 1
 
         return None
 
@@ -112,7 +146,8 @@ class GameEngine(object):
         if action == enums.Actions.SHOOT:
             if actor.bullet is None:
                 dx, dy = enums.BULLET_TANK_SHIFTS[actor.direction.value]
-                actor.bullet = Bullet(actor.y + dx, actor.x + dy, actor.direction, actor)
+                actor.bullet = Bullet(actor.x + dx, actor.y + dy, actor.direction, actor)
+                self._check_can_move(actor.bullet, actor.bullet.x, actor.bullet.y, collider=BulletCollider)
 
     def _check_can_move(self, actor, new_x, new_y, collider=None):
         x, y, dx, dy = actor.get_collision_rect()
@@ -127,7 +162,6 @@ class GameEngine(object):
             else:
                 if collider is not None:
                     update_rec = collider.collide_static(actor, new_x, new_y, self._state)
-                    print update_rec
                     if update_rec is not None:
                         self._renderer.update_bg(update_rec)
                 return False
@@ -168,6 +202,12 @@ class Renderer(object):
 
         return self._screen
 
+    def _make_screen_rect(self, x, y, dx, dy):
+        return ((x + self.OFF_BOARD_SPACE) * self._scale,
+                (y + self.OFF_BOARD_SPACE) * self._scale,
+                 dx * self._scale,
+                 dy * self._scale)
+
     def _render_env(self):
         for x in xrange(self._game_state.map.shape[0]):
             for y in xrange(self._game_state.map.shape[1]):
@@ -179,14 +219,14 @@ class Renderer(object):
     def _lay_sprite(self, sprite, x, y):
         x += self.OFF_BOARD_SPACE
         y += self.OFF_BOARD_SPACE
-        self._screen.put_sprite(sprite.T, (y * self._scale, x * self._scale, sprite.shape[1], sprite.shape[0]))
+        self._screen.put_sprite(sprite.T, (x * self._scale,
+                                           y * self._scale,
+                                           sprite.shape[0],
+                                           sprite.shape[1]))
 
     def clear_actor(self, actor):
         _, _, dx, dy = actor.get_collision_rect()
-        self._screen.clear(((actor.y + self.OFF_BOARD_SPACE) * self._scale,
-                            (actor.x + self.OFF_BOARD_SPACE) * self._scale,
-                            dx * self._scale,
-                            dy * self._scale))
+        self._screen.clear(self._make_screen_rect(actor.x, actor.y, dx, dy))
 
     def update_bg(self, rec):
         for x in xrange(rec[0], rec[0] + rec[2]):
@@ -197,9 +237,7 @@ class Renderer(object):
                     self._lay_sprite(sprite, x * 4, y * 4)
 
                 else:
-                    self._screen.clear(((y * 4 + self.OFF_BOARD_SPACE) * self._scale,
-                                        (x * 4 + self.OFF_BOARD_SPACE) * self._scale,
-                                        4 * self._scale, 4 * self._scale))
+                    self._screen.clear(self._make_screen_rect(x * 4, y * 4, 4, 4))
 
 
 class PyGameScreen(object):
@@ -232,7 +270,7 @@ if __name__ == "__main__":
             map_builder.add_bricks(i, j)
 
     map = map_builder.get_map()
-    game_state = GameState(map).add_actor(PyGameKeyboardPlayer(192, 0, enums.ActorSpriteEnum.PLAYER_1_TANK))
+    game_state = GameState(map).add_actor(PyGameKeyboardPlayer(0, 192, enums.ActorSpriteEnum.PLAYER_1_TANK))
 
     pygame.init()
 

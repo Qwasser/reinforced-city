@@ -44,7 +44,7 @@ class TankActor(Actor):
 
 
 class Bullet(Actor):
-    def __init__(self, y, x, direction, source_tank):
+    def __init__(self, x, y, direction, source_tank):
         super(Bullet, self).__init__(x, y, enums.ActorSpriteEnum.BULLET, direction, moving_speed=2)
         self.x = x
         self.y = y

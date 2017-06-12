@@ -37,10 +37,10 @@ class ActorDirections(Enum):
     RIGHT = 3
 
 DIRECTION_VECTORS = [
-    (-1, 0),    # UP
-    (0, -1),    # LEFT
-    (+1, 0),    # DOWN
-    (0, 1)      # RIGHT
+    (0, -1),    # UP
+    (-1, 0),    # LEFT
+    (0, 1),    # DOWN
+    (1, 0)      # RIGHT
 ]
 
 
@@ -59,10 +59,10 @@ BULLET_SPRITE_RECTS = [
 ]
 
 BULLET_TANK_SHIFTS = [
-    (6, -4),
-    (-4, 6),
-    (6, 16),
-    (16, 6),
+    (6, -3),
+    (-3, 6),
+    (6, 15),
+    (15, 6),
 ]
 
 TANK_COLLISION_RECTANGLE = (0, 0, 16, 16)
