@@ -73,26 +73,17 @@ class BulletCollider(object):
             col_x_min = (new_x + x + dx) / 4
             col_x_max = col_x_min + 1
 
+        need_update = False
+
         for col_x in range(col_x_min, col_x_max):
             for col_y in range(col_y_min, col_y_max):
                 val = (game_state.map[col_y, col_x] - 1) / 4
                 if val == enums.StaticObjectTypes.BRICK.value:
                     game_state.map[col_y, col_x] = 0
+                    need_update = True
 
-        return col_x_min, col_y_min, col_x_max - col_x_min, col_y_max - col_y_min
-
-        if bullet.direction == enums.ActorDirections.DOWN:
-            col_y = (new_y + y + dy) / 4
-
-            col_x_min = (new_x + x) / 4
-            col_x_max = (new_x + x + dx + 3) / 4
-
-            for col_x in range(col_x_min, col_x_max):
-                val = (game_state.map[col_y, col_x] - 1) / 4
-                if val == enums.StaticObjectTypes.BRICK.value:
-                    game_state.map[col_y, col_x] = 0
-            return col_x_min, col_y, col_x_max - col_x_min, 1
-
+        if need_update:
+            return col_x_min, col_y_min, col_x_max - col_x_min, col_y_max - col_y_min
         return None
 
 
@@ -265,8 +256,8 @@ class PyGameScreen(object):
 if __name__ == "__main__":
     map_builder = MapBuilder()
 
-    for i in range(5, 10):
-        for j in range(5, 10):
+    for i in range(5, 20):
+        for j in range(5, 20):
             map_builder.add_bricks(i, j)
 
     map = map_builder.get_map()
