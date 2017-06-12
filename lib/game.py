@@ -55,23 +55,59 @@ class BulletCollider(object):
             col_x_min = (new_x + x) / 4
             col_x_max = (new_x + x + dx + 3) / 4
 
-        if bullet.direction == enums.ActorDirections.DOWN:
+            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
+            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
+
+            if phase_min == 3 or phase_min == 1:
+                col_x_min -= 1
+
+            if phase_max == 2 or phase_max == 0:
+                col_x_max += 1
+
+        elif bullet.direction == enums.ActorDirections.DOWN:
             col_y_min = (new_y + y + dy) / 4
             col_y_max = col_y_min + 1
             col_x_min = (new_x + x) / 4
             col_x_max = (new_x + x + dx + 3) / 4
 
-        if bullet.direction == enums.ActorDirections.LEFT:
+            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
+            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
+
+            if phase_min == 3 or phase_min == 1:
+                col_x_min -= 1
+
+            if phase_max == 2 or phase_max == 0:
+                col_x_max += 1
+
+        elif bullet.direction == enums.ActorDirections.LEFT:
             col_y_min = (new_y + y) / 4
             col_y_max = (new_y + y + dy + 3) / 4
             col_x_min = (new_x + x) / 4
             col_x_max = col_x_min + 1
 
-        if bullet.direction == enums.ActorDirections.RIGHT:
+            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
+            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
+
+            if phase_min == 2 or phase_min == 3:
+                col_y_min -= 1
+
+            if phase_max == 0 or phase_max == 1:
+                col_y_max += 1
+
+        else:
             col_y_min = (new_y + y) / 4
             col_y_max = (new_y + y + dy + 3) / 4
             col_x_min = (new_x + x + dx) / 4
             col_x_max = col_x_min + 1
+
+            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
+            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
+
+            if phase_min == 2 or phase_min == 3:
+                col_y_min -= 1
+
+            if phase_max == 1 or phase_max == 0:
+                col_y_max += 1
 
         need_update = False
 
