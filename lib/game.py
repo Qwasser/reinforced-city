@@ -38,6 +38,36 @@ class MapBuilder(object):
         return self._map.copy()
 
 
+class BulletCollider(object):
+    @staticmethod
+    def collide_wall(bullet):
+        bullet.source_tank.bullet = None
+
+    @staticmethod
+    def collide_static(bullet, new_x, new_y, game_state):
+        bullet.source_tank.bullet = None
+        if bullet.direction == enums.ActorDirections.UP:
+            x, y, dx, dy = bullet.get_collision_rect()
+            col_y = (new_y + y) / 4
+            col_x_min = (new_x + x) / 4
+            col_x_max = (new_x + x + dx + 3) / 4
+
+            for col_x in range(col_x_min, col_x_max + 1):
+                val = (game_state.map[col_y, col_x] - 1) / 4
+                if val == enums.StaticObjectTypes.BRICK.value:
+                    print game_state.map[col_y, col_x]
+                    game_state.map[col_y, col_x] = 0
+            return (col_x_min, col_y, 1,  col_x_max - col_x_min)
+
+        return None
+
+
+
+    @staticmethod
+    def collide_actor(bullet, actor, game_state):
+        pass
+
+
 class GameState(object):
     BOARD_SIZE = BLOCK_COUNT * PIXELS_PER_BLOCK
 
@@ -58,19 +88,16 @@ class GameEngine(object):
         self._renderer = renderer
 
     def _move_actor(self, actor, direction, collider=None):
+        self._renderer.clear_actor(actor)
+
         actor.direction = direction
         dx, dy = enums.DIRECTION_VECTORS[actor.direction.value]
         dx *= actor.moving_speed
         dy *= actor.moving_speed
 
-        if self._check_can_move(actor, actor.x + dx, actor.y + dy):
-            self._renderer.clear_actor(actor)
+        if self._check_can_move(actor, actor.x + dx, actor.y + dy, collider):
             actor.y += dy
             actor.x += dx
-
-        elif collider is not None:
-            self._renderer.clear_actor(actor)
-            collider()
         actor.animate()
 
     def _apply_action(self, actor):
@@ -80,14 +107,14 @@ class GameEngine(object):
             self._move_actor(actor, enums.ActorDirections(action.value))
 
         if actor.bullet is not None:
-            self._move_actor(actor.bullet, actor.bullet.direction, actor.remove_bullet)
+            self._move_actor(actor.bullet, actor.bullet.direction, BulletCollider)
 
         if action == enums.Actions.SHOOT:
             if actor.bullet is None:
                 dx, dy = enums.BULLET_TANK_SHIFTS[actor.direction.value]
-                actor.bullet = Bullet(actor.y + dx, actor.x + dy, actor.direction)
+                actor.bullet = Bullet(actor.y + dx, actor.x + dy, actor.direction, actor)
 
-    def _check_can_move(self, actor, new_x, new_y):
+    def _check_can_move(self, actor, new_x, new_y, collider=None):
         x, y, dx, dy = actor.get_collision_rect()
 
         max_y = self._state.BOARD_SIZE - y - dy
@@ -97,6 +124,16 @@ class GameEngine(object):
             if np.sum(self._state.map[(new_y + y) / 4: (new_y + y + dy + 3) / 4,
                                       (new_x + x) / 4: (new_x + x + dx + 3) / 4]) == 0:
                 return True
+            else:
+                if collider is not None:
+                    update_rec = collider.collide_static(actor, new_x, new_y, self._state)
+                    print update_rec
+                    if update_rec is not None:
+                        self._renderer.update_bg(update_rec)
+                return False
+
+        if collider is not None:
+            collider.collide_wall(actor)
         return False
 
     def tick(self):
@@ -150,6 +187,19 @@ class Renderer(object):
                             (actor.x + self.OFF_BOARD_SPACE) * self._scale,
                             dx * self._scale,
                             dy * self._scale))
+
+    def update_bg(self, rec):
+        for x in xrange(rec[0], rec[0] + rec[2]):
+            for y in xrange(rec[1], rec[1] + rec[3]):
+                obj_index = self._game_state.map[y, x]
+                if obj_index != 0:
+                    sprite = self._sprite_storage.get_static_object_sprite(obj_index - 1)
+                    self._lay_sprite(sprite, x * 4, y * 4)
+
+                else:
+                    self._screen.clear(((y * 4 + self.OFF_BOARD_SPACE) * self._scale,
+                                        (x * 4 + self.OFF_BOARD_SPACE) * self._scale,
+                                        4 * self._scale, 4 * self._scale))
 
 
 class PyGameScreen(object):
