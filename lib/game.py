@@ -38,6 +38,28 @@ class MapBuilder(object):
         return self._map.copy()
 
 
+def brick_collision(x, y, direction, game_state):
+    phase = (game_state.map[y, x] - 1) % 4
+    game_state.map[y, x] = 0
+
+    if direction == enums.ActorDirections.UP or direction == enums.ActorDirections.DOWN:
+        if phase == 3 or phase == 1:
+            game_state.map[y, x - 1] = 0
+
+        if phase == 2 or phase == 0:
+            game_state.map[y, x + 1] = 0
+    else:
+        if phase == 2 or phase == 3:
+            game_state.map[y - 1, x] = 0
+
+        if phase == 1 or phase == 0:
+            game_state.map[y + 1, x] = 0
+
+STATIC_COLLISION_HANDLERS = (
+    brick_collision,
+)
+
+
 class BulletCollider(object):
     @staticmethod
     def collide_wall(bullet):
@@ -45,84 +67,54 @@ class BulletCollider(object):
 
     @staticmethod
     def collide_static(bullet, new_x, new_y, game_state):
+        """
+        This algorithm assumes that bullet is no larger than minimal static environment block
+        """
         bullet.source_tank.bullet = None
 
         x, y, dx, dy = bullet.get_collision_rect()
+        x, y = new_x + x, new_y + y
 
-        if bullet.direction == enums.ActorDirections.UP:
-            col_y_min = (new_y + y) / 4
-            col_y_max = col_y_min + 1
-            col_x_min = (new_x + x) / 4
-            col_x_max = (new_x + x + dx + 3) / 4
+        if bullet.direction == enums.ActorDirections.UP or bullet.direction == enums.ActorDirections.DOWN:
+            if bullet.direction == enums.ActorDirections.UP:
+                col_y_min = y / 4
+                col_y_max = col_y_min + 1
 
-            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
-            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
+            else:
+                col_y_min = (y + dy) / 4
+                col_y_max = col_y_min + 1
 
-            if phase_min == 3 or phase_min == 1:
-                col_x_min -= 1
-
-            if phase_max == 2 or phase_max == 0:
-                col_x_max += 1
-
-        elif bullet.direction == enums.ActorDirections.DOWN:
-            col_y_min = (new_y + y + dy) / 4
-            col_y_max = col_y_min + 1
-            col_x_min = (new_x + x) / 4
-            col_x_max = (new_x + x + dx + 3) / 4
-
-            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
-            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
-
-            if phase_min == 3 or phase_min == 1:
-                col_x_min -= 1
-
-            if phase_max == 2 or phase_max == 0:
-                col_x_max += 1
-
-        elif bullet.direction == enums.ActorDirections.LEFT:
-            col_y_min = (new_y + y) / 4
-            col_y_max = (new_y + y + dy + 3) / 4
-            col_x_min = (new_x + x) / 4
-            col_x_max = col_x_min + 1
-
-            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
-            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
-
-            if phase_min == 2 or phase_min == 3:
-                col_y_min -= 1
-
-            if phase_max == 0 or phase_max == 1:
-                col_y_max += 1
+            col_x_min = x / 4
+            col_x_max = (x + dx + 3) / 4
 
         else:
-            col_y_min = (new_y + y) / 4
-            col_y_max = (new_y + y + dy + 3) / 4
-            col_x_min = (new_x + x + dx) / 4
-            col_x_max = col_x_min + 1
+            if bullet.direction == enums.ActorDirections.LEFT:
+                col_x_min = x / 4
+                col_x_max = col_x_min + 1
 
-            phase_min = (game_state.map[col_y_min, col_x_min] - 1) % 4
-            phase_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) % 4
+            else:
+                col_x_min = (x + dx) / 4
+                col_x_max = col_x_min + 1
 
-            if phase_min == 2 or phase_min == 3:
-                col_y_min -= 1
-
-            if phase_max == 1 or phase_max == 0:
-                col_y_max += 1
+            col_y_min = y / 4
+            col_y_max = (y + dy + 3) / 4
 
         need_update = False
 
-        for col_x in range(col_x_min, col_x_max):
-            for col_y in range(col_y_min, col_y_max):
-                val = (game_state.map[col_y, col_x] - 1) / 4
-                if val == enums.StaticObjectTypes.BRICK.value:
-                    game_state.map[col_y, col_x] = 0
-                    need_update = True
+        mat_min = (game_state.map[col_y_min, col_x_min] - 1) / 4
+        if mat_min >= 0:
+            STATIC_COLLISION_HANDLERS[mat_min](col_x_min, col_y_min, bullet.direction, game_state)
+            need_update = True
+
+        mat_max = (game_state.map[col_y_max - 1, col_x_max - 1] - 1) / 4
+        if mat_max >= 0:
+            STATIC_COLLISION_HANDLERS[mat_max](col_x_max - 1, col_y_max - 1, bullet.direction, game_state)
+            need_update = True
 
         if need_update:
-            return col_x_min, col_y_min, col_x_max - col_x_min, col_y_max - col_y_min
+            return col_x_min - 1, col_y_min - 1, col_x_max - col_x_min + 2, col_y_max - col_y_min + 2
+
         return None
-
-
 
     @staticmethod
     def collide_actor(bullet, actor, game_state):
@@ -292,8 +284,8 @@ class PyGameScreen(object):
 if __name__ == "__main__":
     map_builder = MapBuilder()
 
-    for i in range(5, 20):
-        for j in range(5, 20):
+    for i in range(0, 20):
+        for j in range(0, 20):
             map_builder.add_bricks(i, j)
 
     map = map_builder.get_map()
