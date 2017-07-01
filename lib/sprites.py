@@ -14,8 +14,8 @@ class SpriteStorage(object):
     STATIC_OBJECT_PART_SIZE = 4
     STATIC_OBJECT_PART_OFFSETS = [
         (0, 0),
-        (0, STATIC_OBJECT_PART_SIZE),
         (STATIC_OBJECT_PART_SIZE, 0),
+        (0, STATIC_OBJECT_PART_SIZE),
         (STATIC_OBJECT_PART_SIZE, STATIC_OBJECT_PART_SIZE)
     ]
 

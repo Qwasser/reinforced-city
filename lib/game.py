@@ -21,9 +21,7 @@ class MapBuilder(object):
     def __init__(self):
         self._map = np.zeros((self.MAP_SIZE, self.MAP_SIZE), dtype=np.uint8)
 
-    def add_bricks(self, x, y):
-        base = enums.StaticObjectTypes.BRICK.value * STATIC_SPRITE_TYPE_COUNT
-
+    def _add_static(self, x, y, base):
         x *= SPRITES_PER_OBJ
         y *= SPRITES_PER_OBJ
 
@@ -32,6 +30,14 @@ class MapBuilder(object):
         self._map[y + 1, x] = base + 3
         self._map[y + 1, x + 1] = base + 4
 
+    def add_bricks(self, x, y):
+        base = enums.StaticObjectTypes.BRICK.value * STATIC_SPRITE_TYPE_COUNT
+        self._add_static(x, y, base)
+        return self
+
+    def add_concrete(self, x, y):
+        base = enums.StaticObjectTypes.CONCRETE.value * STATIC_SPRITE_TYPE_COUNT
+        self._add_static(x, y, base)
         return self
 
     def get_map(self):
@@ -55,8 +61,14 @@ def brick_collision(x, y, direction, game_state):
         if phase == 1 or phase == 0:
             game_state.map[y + 1, x] = 0
 
+
+def concrete_collision(x, y, direction, game_state):
+    pass
+
+
 STATIC_COLLISION_HANDLERS = (
     brick_collision,
+    concrete_collision
 )
 
 
@@ -286,7 +298,10 @@ if __name__ == "__main__":
 
     for i in range(0, 20):
         for j in range(0, 20):
-            map_builder.add_bricks(i, j)
+            if j % 2 == 0:
+                map_builder.add_concrete(i, j)
+            else:
+                map_builder.add_bricks(i, j)
 
     map = map_builder.get_map()
     game_state = GameState(map).add_actor(PyGameKeyboardPlayer(0, 192, enums.ActorSpriteEnum.PLAYER_1_TANK))
