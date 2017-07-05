@@ -24,13 +24,19 @@ class SpriteStorage(object):
         enums.ActorSpriteEnum.BULLET: (20, 6),
         enums.StaticObjectTypes.BRICK: (16, 0),
         enums.StaticObjectTypes.CONCRETE: (16, 1),
-        enums.ActorSpriteEnum.QUICK_TANK: (8, 5)
+        enums.ActorSpriteEnum.QUICK_TANK: (8, 5),
+
+        enums.ShotAnimationSprites.FIRST_FRAME: (16, 8),
+        enums.ShotAnimationSprites.SECOND_FRAME: (17, 8),
+        enums.ShotAnimationSprites.THIRD_FRAME: (18, 8)
     }
 
     def __init__(self, sprite_file, scale):
         self.palette = None
         self._player_sprites = {}
         self._bullet_sprites = {}
+        self._animation_sprites = {}
+
         self._scale = scale
         self._load_sprites(sprite_file)
 
@@ -46,6 +52,7 @@ class SpriteStorage(object):
 
         self._load_bullet_sprites(im_array)
         self._load_static_object_sprites(im_array)
+        self._load_animation_sprites(im_array)
 
     def _get_sprite_offsets(self, sprite_type):
         base_x_offset, base_y_offset = self.SPRITE_TILE_OFFSETS[sprite_type]
@@ -86,7 +93,7 @@ class SpriteStorage(object):
             sprite_index += 1
 
     def _load_static_object_sprites(self, sprite_array):
-        self.static_object_sprites = np.zeros((len(enums.StaticObjectTypes) * self.STATIC_OBJECT_PART_SIZE,
+        self._static_object_sprites = np.zeros((len(enums.StaticObjectTypes) * self.STATIC_OBJECT_PART_SIZE,
                                                self.STATIC_OBJECT_PART_SIZE * self._scale,
                                                self.STATIC_OBJECT_PART_SIZE * self._scale),
                                               dtype=np.uint8)
@@ -100,7 +107,16 @@ class SpriteStorage(object):
                 x = x_offset + part_offset[0]
                 y = y_offset + part_offset[1]
                 sprite = sprite_array[y: y + self.STATIC_OBJECT_PART_SIZE, x: x + self.STATIC_OBJECT_PART_SIZE]
-                self.static_object_sprites[base + i] = scale_up_sprite(sprite, self._scale)
+                self._static_object_sprites[base + i] = scale_up_sprite(sprite, self._scale)
+
+    def _load_animation_sprites(self, sprite_array):
+        for sprite in enums.ShotAnimationSprites:
+            x_offset, y_offset = self.SPRITE_TILE_OFFSETS[sprite]
+            x_offset *= self.TILE_SIZE
+            y_offset *= self.TILE_SIZE
+
+            sprite_rect = (x_offset, y_offset, self.TILE_SIZE, self.TILE_SIZE)
+            self._animation_sprites[sprite] = self._crop_sprite_and_rescale(sprite_rect, sprite_array)
 
     def array_to_img(self, img):
         img = Image.fromarray(img)
@@ -114,7 +130,10 @@ class SpriteStorage(object):
         return self._bullet_sprites[bullet.direction]
 
     def get_static_object_sprite(self, index):
-        return self.static_object_sprites[index]
+        return self._static_object_sprites[index]
+
+    def get_animation_sprite(self, animation):
+        return self._animation_sprites[animation.sprite]
 
 if __name__ == "__main__":
     sprite_storage = SpriteStorage('../data/tank_sprite.png', 4)

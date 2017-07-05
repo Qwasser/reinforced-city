@@ -36,10 +36,16 @@ class ActorDirections(Enum):
     DOWN = 2
     RIGHT = 3
 
+
+class ShotAnimationSprites(Enum):
+    FIRST_FRAME = 0
+    SECOND_FRAME = 1
+    THIRD_FRAME = 2
+
 DIRECTION_VECTORS = [
     (0, -1),    # UP
     (-1, 0),    # LEFT
-    (0, 1),    # DOWN
+    (0, 1),     # DOWN
     (1, 0)      # RIGHT
 ]
 
