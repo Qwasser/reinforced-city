@@ -113,4 +113,6 @@ class Animation(object):
 class AnimationFactory(object):
     @staticmethod
     def make_bullet_explosion_animation(bullet):
-        return Animation(enums.ShotAnimationSprites, bullet.x, bullet.y, enums.BULLET_EXPLOSION_ANIMATION_RECT)
+        shift = enums.BULLET_EXPLOSION_SHIFT[bullet.direction.value]
+        x, y = bullet.x + shift[0], bullet.y + shift[1]
+        return Animation(enums.ShotAnimationSprites, x, y, enums.BULLET_EXPLOSION_ANIMATION_RECT)

@@ -73,6 +73,13 @@ BULLET_TANK_SHIFTS = [
     (15, 6),
 ]
 
+BULLET_EXPLOSION_SHIFT = [
+    (-7, -8),
+    (-8, -7),
+    (-7, -4),
+    (-4, -7),
+]
+
 TANK_COLLISION_RECTANGLE = (0, 0, 16, 16)
 
 

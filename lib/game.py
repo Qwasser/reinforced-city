@@ -84,6 +84,7 @@ class BulletCollider(object):
         This algorithm assumes that bullet is no larger than minimal static environment block
         """
         bullet.source_tank.bullet = None
+        game_state.add_animation(AnimationFactory.make_bullet_explosion_animation(bullet))
 
         x, y, dx, dy = bullet.get_collision_rect()
         x, y = new_x + x, new_y + y
@@ -309,6 +310,7 @@ class PyGameScreen(object):
 
     def _make_surface(self, sprite):
         sprite_sf = pygame.surfarray.make_surface(sprite)
+        sprite_sf.set_colorkey(0)
         i_p = iter(self._palette)
         sprite_sf.set_palette(list(zip(i_p, i_p, i_p)))
         return sprite_sf
@@ -323,8 +325,8 @@ class PyGameScreen(object):
 if __name__ == "__main__":
     map_builder = MapBuilder()
 
-    for i in range(0, 20):
-        for j in range(0, 20):
+    for i in range(10, 20):
+        for j in range(11, 20):
             if j % 2 == 0:
                 map_builder.add_concrete(i, j)
             else:
