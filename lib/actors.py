@@ -83,3 +83,34 @@ class PyGameKeyboardPlayer(TankActor):
             return enums.Actions.SHOOT
 
         return enums.Actions.DO_NOTHING
+
+
+class Animation(object):
+    def __init__(self, sprite_enum, x, y, sprite_size):
+        self._sprites = list(sprite_enum)
+        self._sprite_counter = 0
+        self.x = x
+        self.y = y
+        self.sprite_size = sprite_size
+        self.is_dead = False
+
+        self._delay = 3
+
+    def tick(self):
+        self._sprite_counter += 1
+        if self._sprite_counter / self._delay == len(self._sprites):
+            self.is_dead = True
+
+    @property
+    def sprite(self):
+        return self._sprites[self._sprite_counter / self._delay]
+
+    @property
+    def size(self):
+        return len(self._sprites)
+
+
+class AnimationFactory(object):
+    @staticmethod
+    def make_bullet_explosion_animation(bullet):
+        return Animation(enums.ShotAnimationSprites, bullet.x, bullet.y, enums.BULLET_EXPLOSION_ANIMATION_RECT)

@@ -42,6 +42,8 @@ class ShotAnimationSprites(Enum):
     SECOND_FRAME = 1
     THIRD_FRAME = 2
 
+BULLET_EXPLOSION_ANIMATION_RECT = (0, 0, 16, 16)
+
 DIRECTION_VECTORS = [
     (0, -1),    # UP
     (-1, 0),    # LEFT

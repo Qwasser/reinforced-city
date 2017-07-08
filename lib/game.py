@@ -1,6 +1,6 @@
 import numpy as np
 from sprites import SpriteStorage
-from actors import PyGameKeyboardPlayer, Bullet
+from actors import PyGameKeyboardPlayer, Bullet, AnimationFactory
 import pygame
 
 import enums
@@ -74,8 +74,9 @@ STATIC_COLLISION_HANDLERS = (
 
 class BulletCollider(object):
     @staticmethod
-    def collide_wall(bullet):
+    def collide_wall(bullet, game_state):
         bullet.source_tank.bullet = None
+        game_state.add_animation(AnimationFactory.make_bullet_explosion_animation(bullet))
 
     @staticmethod
     def collide_static(bullet, new_x, new_y, game_state):
@@ -139,10 +140,14 @@ class GameState(object):
     def __init__(self, map):
         self.map = map
         self.actors = []
+        self.animations = []
 
     def add_actor(self, actor):
         self.actors.append(actor)
         return self
+
+    def add_animation(self, animation):
+        self.animations.append(animation)
 
 
 class GameEngine(object):
@@ -198,10 +203,17 @@ class GameEngine(object):
                 return False
 
         if collider is not None:
-            collider.collide_wall(actor)
+            collider.collide_wall(actor, self._state)
         return False
 
     def tick(self):
+        new_animation_list = []
+        for animation in self._state.animations:
+            if not animation.is_dead:
+                animation.tick()
+                new_animation_list.append(animation)
+        self._state.animations = new_animation_list
+
         for actor in game_state.actors:
             self._apply_action(actor)
 
@@ -231,9 +243,18 @@ class Renderer(object):
 
                 self._lay_sprite(sprite, bullet.x, bullet.y)
 
+        for animation in self._game_state.animations:
+            _, _, dx, dy = animation.sprite_size
+            self._screen.clear(self._make_screen_rect(animation.x, animation.y, dx, dy))
+            self.update_bg((animation.x / 4, animation.y / 4, (dx + 3) / 4 + 1, (dy + 3) / 4 + 1))
+
+            if not animation.is_dead:
+                sprite = self._sprite_storage.get_animation_sprite(animation)
+                self._lay_sprite(sprite, animation.x, animation.y)
+
         return self._screen
 
-    def _make_screen_rect(self, x, y, dx, dy):
+    def _make_screen_rect(self, x, y , dx, dy):
         return ((x + self.OFF_BOARD_SPACE) * self._scale,
                 (y + self.OFF_BOARD_SPACE) * self._scale,
                  dx * self._scale,
@@ -260,8 +281,14 @@ class Renderer(object):
         self._screen.clear(self._make_screen_rect(actor.x, actor.y, dx, dy))
 
     def update_bg(self, rec):
-        for x in xrange(rec[0], rec[0] + rec[2]):
-            for y in xrange(rec[1], rec[1] + rec[3]):
+        x_max = min(rec[0] + rec[2], self._game_state.BOARD_SIZE / 4)
+        x_min = max(rec[0], 0)
+
+        y_max = min(rec[1] + rec[3], self._game_state.BOARD_SIZE / 4)
+        y_min = max(rec[1], 0)
+
+        for x in xrange(x_min, x_max):
+            for y in xrange(y_min, y_max):
                 obj_index = self._game_state.map[y, x]
                 if obj_index != 0:
                     sprite = self._sprite_storage.get_static_object_sprite(obj_index - 1)
@@ -313,6 +340,7 @@ if __name__ == "__main__":
     engine.set_renderer(renderer)
 
     clock = pygame.time.Clock()
+
     while True:
         engine.tick()
         image = renderer.render()
