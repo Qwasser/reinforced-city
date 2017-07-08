@@ -234,6 +234,11 @@ class Renderer(object):
         self._render_env()
 
     def render(self):
+        for animation in self._game_state.animations:
+            _, _, dx, dy = animation.sprite_size
+            self._screen.clear(self._make_screen_rect(animation.x, animation.y, dx, dy))
+            self.update_bg((animation.x / 4, animation.y / 4, (dx + 3) / 4 + 1, (dy + 3) / 4 + 1))
+
         for actor in self._game_state.actors:
             sprite = self._sprite_storage.get_tank_actor_sprite(actor)
             self._lay_sprite(sprite, actor.x, actor.y)
@@ -241,14 +246,9 @@ class Renderer(object):
             bullet = actor.bullet
             if bullet is not None:
                 sprite = self._sprite_storage.get_bullet_actor_sprite(bullet)
-
                 self._lay_sprite(sprite, bullet.x, bullet.y)
 
         for animation in self._game_state.animations:
-            _, _, dx, dy = animation.sprite_size
-            self._screen.clear(self._make_screen_rect(animation.x, animation.y, dx, dy))
-            self.update_bg((animation.x / 4, animation.y / 4, (dx + 3) / 4 + 1, (dy + 3) / 4 + 1))
-
             if not animation.is_dead:
                 sprite = self._sprite_storage.get_animation_sprite(animation)
                 self._lay_sprite(sprite, animation.x, animation.y)
